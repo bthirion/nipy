@@ -145,11 +145,16 @@ def compute_individual_regions(domain, lbeta, smin=5, theta=3.0,
         # description in terms of blobs
         beta = np.reshape(lbeta[:, s], (nvox, 1))
         nroi = HROI_as_discrete_domain_blobs(
-            domain, beta, threshold=theta, smin=smin)
+            domain, np.abs(beta), threshold=theta, smin=smin)
         
         if nroi is not None and nroi.k > 0:
+            signal = [beta[nroi.select_id(id, roi=False)] 
+                      for id in nroi.get_id()]
+            nroi.remove_feature('signal')
+            nroi.set_feature('signal', signal)
             bfm = nroi.representative_feature('signal', 'weighted mean')
             bfm = bfm[[nroi.select_id(id) for id in nroi.get_leaves_id()]]
+            
             # get the regions position
             if reshuffle:
                 nroi.reduce_to_leaves()
@@ -167,7 +172,7 @@ def compute_individual_regions(domain, lbeta, smin=5, theta=3.0,
 
             # compute the prior proba of being null
             learn = np.squeeze(beta[beta != 0])
-            bf0 = signal_to_pproba(bfm, learn, method)
+            bf0 = 0 * signal_to_pproba(bfm, learn, method) 
             gf0.append(bf0)
             sub.append(s * np.ones(np.size(bfm)))
             

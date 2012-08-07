@@ -16,9 +16,9 @@ from .discrete_domain import domain_from_image
 
 
 def make_bsa_image(
-    mask_images, betas, theta=3., dmax=5., ths=0, thq=0.5, smin=0, swd=None,
-    method='simple', subj_id=None, nbeta='default', dens_path=None,
-    cr_path=None, verbose=0, reshuffle=False):
+    mask_images, betas, theta=3., dmax=5., ths=0, thq=0.5, smin=0, 
+    output_dir=None, method='simple', subj_id=None, nbeta='default', 
+    dens_path=None, cr_path=None, verbose=0, reshuffle=False):
     """ Main function for  performing bsa on a set of images.
     It creates the some output images in the given directory
 
@@ -38,7 +38,7 @@ def make_bsa_image(
              test = p(representativity>ths)>thq
     smin=0: minimal size (in voxels) of the extracted blobs
             smaller blobs are merged into larger ones
-    swd: string, optional
+    output_dir: string, optional
         if not None, output directory
     method='simple': applied region detection method; to be chose among
                      'simple', 'quick', 'loo'
@@ -47,11 +47,11 @@ def make_bsa_image(
     nbeta='default', string, identifier of the contrast
     dens_path=None, string, path of the output density image
                    if False, no image is written
-                   if None, the path is computed from swd, nbeta
+                   if None, the path is computed from output_dir, nbeta
     cr_path=None,  string, path of the (4D) output label image
                   if False, no ime is written
                   if None, many images are written,
-                  with paths computed from swd, subj_id and nbeta
+                  with paths computed from output_dir, subj_id and nbeta
     reshuffle: bool, optional
                if true, randomly swap the sign of the data
 
@@ -136,7 +136,7 @@ def make_bsa_image(
         wim.get_header()['descrip'] = 'group-level spatial density \
                                        of active regions'
         if dens_path == None:
-            dens_path = op.join(swd, "density_%s.nii" % nbeta)
+            dens_path = op.join(output_dir, "density_%s.nii" % nbeta)
         save(wim, dens_path)
 
     if cr_path == False:
@@ -144,12 +144,12 @@ def make_bsa_image(
 
     default_idx = AF.k + 2
 
-    if cr_path == None and swd == None:
+    if cr_path == None and output_dir == None:
         return AF, BF
 
     if cr_path == None:
         # write a 3D image for group-level labels
-        cr_path = op.join(swd, "CR_%s.nii" % nbeta)
+        cr_path = op.join(output_dir, "CR_%s.nii" % nbeta)
         labels = - 2 * np.ones(ref_dim)
         labels[mask > 0] = crmap
         wim = Nifti1Image(labels.astype('int16'), affine)
@@ -157,7 +157,7 @@ def make_bsa_image(
         save(wim, cr_path)
 
         # write a prevalence image
-        cr_path = op.join(swd, "prevalence_%s.nii" % nbeta)
+        cr_path = op.join(output_dir, "prevalence_%s.nii" % nbeta)
         prev = np.zeros(ref_dim)
         prev[mask > 0] = AF.prevalence_density()
         wim = Nifti1Image(prev, affine)
@@ -166,7 +166,8 @@ def make_bsa_image(
 
         # write 3d images for the subjects
         for s in range(nsubj):
-            label_image = op.join(swd, "AR_s%s_%s.nii" % (subj_id[s], nbeta))
+            label_image = op.join(output_dir, "AR_s%s_%s.nii" % (
+                    subj_id[s], nbeta))
             labels = - 2 * np.ones(ref_dim)
             labels[mask > 0] = -1
             if BF[s] is not None:

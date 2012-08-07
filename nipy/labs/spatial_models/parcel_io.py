@@ -122,7 +122,7 @@ def parcel_input(mask_images, learning_images, ths=.5, fdim=None):
 
 
 def write_parcellation_images(Pa, template_path=None, indiv_path=None,
-                              subject_id=None, swd=None):
+                              subject_id=None, output_dir=None):
     """ Write images that describe the spatial structure of the parcellation
 
     Parameters
@@ -135,13 +135,13 @@ def write_parcellation_images(Pa, template_path=None, indiv_path=None,
                 paths of the individual parcellation images
     subject_id: list of strings of length Pa.nb_subj
                 subject identifiers, used to infer the paths when not available
-    swd: string, optional
+    output_dir: string, optional
          output directory used to infer the paths when these are not available
     """
     # argument check
-    if swd == None:
+    if output_dir == None:
         from tempfile import mkdtemp
-        swd = mkdtemp()
+        output_dir = mkdtemp()
 
     if subject_id == None:
         subject_id = ['subj_%04d' % s for s in range(Pa.nb_subj)]
@@ -151,9 +151,9 @@ def write_parcellation_images(Pa, template_path=None, indiv_path=None,
 
     # If necessary, generate the paths
     if template_path is None:
-        template_path = os.path.join(swd, "template_parcel.nii")
+        template_path = os.path.join(output_dir, "template_parcel.nii")
     if indiv_path is None:
-        indiv_path = [os.path.join(swd, "parcel%s.nii" % subject_id[s])
+        indiv_path = [os.path.join(output_dir, "parcel%s.nii" % subject_id[s])
                         for s in range(Pa.nb_subj)]
 
     # write the template image
@@ -174,7 +174,7 @@ def write_parcellation_images(Pa, template_path=None, indiv_path=None,
 
 
 def parcellation_based_analysis(Pa, test_images, test_id='one_sample',
-                                rfx_path=None, condition_id='', swd=None):
+                                rfx_path=None, condition_id=''):
     """ This function computes parcel averages and RFX at the parcel-level
 
     Parameters
@@ -188,8 +188,6 @@ def parcellation_based_analysis(Pa, test_images, test_id='one_sample',
           otherwise, the parcel-based signal averages are returned
     rfx_path: string optional,
               path of the resulting one-sample test image, if applicable
-    swd: string, optional
-         output directory used to compute output path if rfx_path is not given
     condition_id: string, optional,
                   contrast/condition id  used to compute output path
 

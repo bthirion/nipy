@@ -111,7 +111,7 @@ def test_parcel_based_analysis():
         parcels = hparcel(domain, ldata, n_parcel, mu=3.0)
         prfx = parcellation_based_analysis(
             parcels, data_image, test_id='one_sample', rfx_path='prfx.nii',
-            condition_id='', swd=dir_context)
+            condition_id='', output_dir=dir_context)
         assert exists('prfx.nii')
         assert prfx.max() < 10
         assert prfx.min() > - 10

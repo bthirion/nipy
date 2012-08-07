@@ -42,7 +42,7 @@ n2 = nroi.reduce_to_leaves()
 
 td = n1.make_forest().depth_from_leaves()
 root = np.argmax(td)
-lv = n1.make_forest().get_descendents(root)
+lv = n1.make_forest().get_descendants(root)
 u = nroi.make_graph().cc()
 
 flat_data = dataset.ravel()

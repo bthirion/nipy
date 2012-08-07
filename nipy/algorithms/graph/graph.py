@@ -982,7 +982,7 @@ x
 
     def subgraph(self, valid):
         """ Creates a subgraph with the vertices for which valid>0
-        and with the correponding set of edges
+        and with the corresponding set of edges
 
         Parameters
         ----------

@@ -772,7 +772,7 @@ class NDGridDomain(StructuredDomain):
 
         Returns
         -------
-        the correponding set of values
+        the corresponding set of values
 
         """
         if isinstance(path, basestring):

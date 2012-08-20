@@ -20,9 +20,10 @@ def basic_field(nx=10, ny=10, nz=10):
 
 def basic_field_random(nx=10, ny=10, nz=1):
     xyz = np.reshape(np.indices((nx, ny, nz)), (3, nx * ny * nz)).T
-    data = 0.5 * nr.randn(nx * ny * nz, 1) + np.sum(xyz, 1).astype(np.float)
+    data = 0.5 * nr.randn(nx * ny * nz, 1) + np.sum(xyz, 1)[:, np.newaxis]
     myfield = field_from_graph_and_data(wgraph_from_3d_grid(xyz, 26), data)
     return myfield
+
 
 
 def basic_field_2(nx=10, ny=10, nz=10):

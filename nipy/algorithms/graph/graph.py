@@ -817,7 +817,10 @@ x
             raise ValueError('X.shape[0] != self.V')
         if self.E > 0:
             d = np.sum((X[self.edges[:, 0]] - X[self.edges[:, 1]]) ** 2, 1)
+        else:
+            d = np.zeros_like([])
         self.weights = np.sqrt(d)
+        
 
     def set_gaussian(self, X, sigma=0):
         """

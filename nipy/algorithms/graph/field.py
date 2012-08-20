@@ -446,7 +446,7 @@ class Field(WeightedGraph):
         label = g.voronoi_labelling(seed)
         return label
 
-    def geodesic_kmeans(self, seeds=None, label=None, maxiter=100, eps=1.e-4,
+    def geodesic_kmeans(self, seeds=None, label=None, maxiter=10, eps=1.e-4,
                         verbose=0):
         """ Geodesic k-means algorithm
         i.e. obtention of clusters that are topologically
@@ -462,7 +462,7 @@ class Field(WeightedGraph):
                 it is expected that labels take their values
                 in a certain range (0..lmax)
                 if Labels==None, this is not used
-                if seeds==None and labels==None,  an ewxception is raised
+                if seeds==None and labels==None,  an exception is raised
         maxiter: int, optional,
                  maximal number of iterations
         eps: float, optional,
@@ -481,16 +481,41 @@ class Field(WeightedGraph):
             raise ValueError('No initialization has been provided')
         k = np.size(seeds)
         inertia_old = NEGINF
+                
+        def make_seed(mask, n_points=10):
+            subfield = self.subfield(mask)
+            subfield.set_euclidian(subfield.field)
+            if n_points >= mask.sum():
+                aux = range(mask.sum())
+            else:
+                aux = np.argsort(np.random.rand(mask.sum()))[:n_points]
+            sq_dist = np.array(
+                [(subfield.dijkstra(n) ** 2) for n in aux]).sum(0)
+            idx = np.ma.array(np.cumsum(mask), mask=(1 - mask))
+            seed = np.where(idx == sq_dist.argmin() + 1)[0]
+            inertia = sq_dist.min()
+            return seed, inertia
+                
+        def update_seed(mask, current_seed):
+            subfield = self.subfield(mask)
+            subfield.set_euclidian(subfield.field)
+            idx = np.ma.array(np.cumsum(mask), mask=(1 - mask))
+            cs = idx[current_seed] - 1
+            neighb = subfield.to_coo_matrix().tolil().rows[cs] + [cs]
+            ldist = np.array(
+                [(subfield.dijkstra(n) ** 2).sum() for n in neighb])
+            seed = np.where(idx == neighb[ldist.argmin()] + 1)[0]
+            inertia = ldist.min()
+            return seed, inertia
+
         if seeds == None:
             k = label.max() + 1
             if np.size(np.unique(label)) != k:
-                raise ValueError('missing values, cannot proceed')
+                raise ValueError('Not all the label values are provided')
             seeds = np.zeros(k).astype(np.int)
             for  j in range(k):
-                lj = np.nonzero(label == j)[0]
-                cent = np.mean(self.field[lj], 0)
-                tj = np.argmin(np.sum((cent - self.field[lj]) ** 2, 1))
-                seeds[j] = lj[tj]
+                seeds[j], _ = make_seed(label == j)
+                
         else:
             k = np.size(seeds)
 
@@ -499,20 +524,17 @@ class Field(WeightedGraph):
             label = self.constrained_voronoi(seeds)
             # update the seeds
             inertia = 0
-            pinteria = 0
             for  j in range(k):
-                lj = np.nonzero(label == j)[0]
-                pinteria += np.sum(
-                    (self.field[seeds[j]] - self.field[lj]) ** 2)
-                cent = np.mean(self.field[lj], 0)
-                tj = np.argmin(np.sum((cent - self.field[lj]) ** 2, 1))
-                seeds[j] = lj[tj]
-                inertia += np.sum((cent - self.field[lj]) ** 2)
+                seeds[j], inertia_j = update_seed(label == j, seeds[j])
+                inertia += inertia_j
             if verbose:
-                print i, inertia
-            if np.absolute(inertia_old - inertia) < eps:
+                print 'Iteration', i, inertia
+            if np.abs(inertia_old - inertia) < eps:
                 break
             inertia_old = inertia
+        inertia = 0
+        for  j in range(k):
+            inertia += np.var(self.field[label == j]) * np.sum(label == j)
         return seeds, label, inertia
 
     def ward(self, nbcluster):

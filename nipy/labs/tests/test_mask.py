@@ -12,11 +12,20 @@ import nibabel as nib
 from nibabel.tmpdirs import InTemporaryDirectory
 
 from .. import mask as nnm
-from ..mask import largest_cc, threshold_connect_components, \
+from ..mask import largest_cc, compute_mask, threshold_connect_components, \
         series_from_mask
 
 from nipy.testing import assert_equal, assert_true, \
     assert_array_equal, anatfile, assert_false
+
+
+def test_mask_fix_int():
+    # test that masking works on int16 volumes
+    data = (20000 + 100 * np.random.rand(10, 10, 10)).astype(np.int16)
+    data[:5, :5, :5] += 10000
+    mask = compute_mask(data, reference_volume=None, m=0.2, M=0.9,
+                        cc=True, opening=False, exclude_zeros=False)
+    assert_equal(mask.sum(), 125)
 
 
 def test_largest_cc():

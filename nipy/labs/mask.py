@@ -227,8 +227,8 @@ def compute_mask(mean_volume, reference_volume=None, m=0.2, M=0.9,
     delta = sorted_input[limiteinf + 1:limitesup + 1] \
             - sorted_input[limiteinf:limitesup]
     ia = delta.argmax()
-    threshold = 0.5 * (sorted_input[ia + limiteinf]
-                        + sorted_input[ia + limiteinf + 1])
+    threshold = 0.5 * (float(sorted_input[ia + limiteinf])
+                        + float(sorted_input[ia + limiteinf  +1]))
 
     mask = (reference_volume >= threshold)
 

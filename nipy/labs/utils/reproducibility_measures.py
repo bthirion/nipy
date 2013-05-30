@@ -27,7 +27,7 @@ from nipy.labs.spatial_models.discrete_domain import \
 # ---------------------------------------------------------
 
 
-def histo_repro(h):
+def _histo_repro(h):
     """ Given the histogram h, compute a standardized reproducibility measure
 
     Parameters
@@ -49,7 +49,7 @@ def histo_repro(h):
     return res / nf
 
 
-def cluster_threshold(stat_map, domain, th, csize):
+def _cluster_threshold(stat_map, domain, th, csize):
     """Perform a thresholding of a map at the cluster-level
 
     Parameters
@@ -89,10 +89,9 @@ def cluster_threshold(stat_map, domain, th, csize):
     return binary
 
 
-def get_cluster_position_from_thresholded_map(stat_map, domain, thr=3.0,
+def _get_cluster_position_from_thresholded_map(stat_map, domain, thr=3.0,
                                               csize=10):
-    """
-    the clusters above thr of size greater than csize in
+    """ the clusters above thr of size greater than csize in
     18-connectivity are computed
 
     Parameters
@@ -126,20 +125,17 @@ def get_cluster_position_from_thresholded_map(stat_map, domain, thr=3.0,
     # get the coordinates
     coord = thresholded_domain.get_coord()
 
-    # get the barycenters
-    baryc = []
-    for i in range(label.max() + 1):
-        if np.sum(label == i) >= csize:
-            baryc.append(np.mean(coord[label == i], 0))
+    # get the centers
+    centers = [np.mean(coord[label == i], 0) for i in range(label.max() + 1) 
+               if np.sum(label == i) >= csize]
 
-    if len(baryc) == 0:
+    if len(centers) == 0:
         return None
+    else:
+        return np.vstack(centers)
 
-    baryc = np.vstack(baryc)
-    return baryc
 
-
-def get_peak_position_from_thresholded_map(stat_map, domain, threshold):
+def _get_peak_position_from_thresholded_map(stat_map, domain, threshold):
     """The peaks above thr in 18-connectivity are computed
 
     Parameters
@@ -174,7 +170,7 @@ def get_peak_position_from_thresholded_map(stat_map, domain, threshold):
 # ---------------------------------------------------------
 
 
-def bootstrap_group(nsubj, ngroups):
+def _bootstrap_group(nsubj, ngroups):
     """Split the proposed group into redundant subgroups by bootstrap
 
     Parameters
@@ -193,7 +189,7 @@ def bootstrap_group(nsubj, ngroups):
     return samples
 
 
-def split_group(nsubj, ngroups):
+def _split_group(nsubj, ngroups):
     """Split the proposed group into random disjoint subgroups
 
     Parameters
@@ -218,7 +214,7 @@ def split_group(nsubj, ngroups):
 # ---------------------------------------------------------
 
 
-def conjunction(x, vx, k):
+def _conjunction(x, vx, k):
     """Returns a conjunction statistic as the sum of the k lowest t-values
 
     Parameters
@@ -247,7 +243,7 @@ def ttest(x):
     return np.squeeze(t)
 
 
-def fttest(x, vx):
+def _ffx_t_test(x, vx):
     """Assuming that x and vx represent a effect and variance estimates,
     returns a cumulated ('fixed effects') t-test of the data over each row
 
@@ -268,8 +264,8 @@ def fttest(x, vx):
     return t
 
 
-def mfx_ttest(x, vx):
-    """Idem fttest, but returns a mixed-effects statistic
+def _mfx_t_test(x, vx):
+    """Idem _ffx_t_test, but returns a mixed-effects statistic
 
     Parameters
     ----------
@@ -285,14 +281,7 @@ def mfx_ttest(x, vx):
     return np.squeeze(t)
 
 
-def voxel_thresholded_ttest(x, threshold):
-    """Returns a binary map of the ttest>threshold
-    """
-    t = ttest(x)
-    return t > threshold
-
-
-def statistics_from_position(target, data, sigma=1.0):
+def _statistics_from_position(target, data, sigma=1.0):
     """ Return a number characterizing how close data is from
     target using a kernel-based statistic
 
@@ -312,7 +301,7 @@ def statistics_from_position(target, data, sigma=1.0):
                 1 is good
                 0 is bad
     """
-    from ...algorithms.utils.fast_distance import euclidean_distance as ed
+    from ...algorithms.utils.fast_distance import euclidean_distance
     if data == None:
         if target == None:
             return 0.# could be 1.0 ?
@@ -321,7 +310,7 @@ def statistics_from_position(target, data, sigma=1.0):
     if target == None:
         return 0.
 
-    dmatrix = ed(data, target) / sigma
+    dmatrix = euclidean_distance(data, target) / sigma
     sensitivity = dmatrix.min(0)
     sensitivity = np.exp( - 0.5 * sensitivity ** 2)
     sensitivity = np.mean(sensitivity)
@@ -360,8 +349,7 @@ def voxel_reproducibility(data, vardata, domain, ngroups, method='crfx',
                                      swap, verbose, **kwargs)
 
     h = np.array([np.sum(rmap == i) for i in range(ngroups + 1)])
-    hr = histo_repro(h)
-    return hr
+    return _histo_repro(h)
 
 
 def draw_samples(nsubj, ngroups, split_method='default'):
@@ -389,13 +377,13 @@ def draw_samples(nsubj, ngroups, split_method='default'):
     """
     if split_method == 'default':
         if nsubj > 10 * ngroups:
-            samples = split_group(nsubj, ngroups)
+            samples = _split_group(nsubj, ngroups)
         else:
-            samples = bootstrap_group(nsubj, ngroups)
+            samples = _bootstrap_group(nsubj, ngroups)
     elif split_method == 'bootstrap':
-        samples = bootstrap_group(nsubj, ngroups)
+        samples = _bootstrap_group(nsubj, ngroups)
     elif split_method == '':
-        samples = split_group(nsubj, ngroups)
+        samples = _split_group(nsubj, ngroups)
     else:
         raise ValueError('unknown splitting method')
 
@@ -446,21 +434,21 @@ def map_reproducibility(data, vardata, domain, ngroups, method='crfx',
         if method == 'crfx':
             stat_map = ttest(x)
         elif method == 'cffx':
-            stat_map = fttest(x, vx)
+            stat_map = _ffx_t_test(x, vx)
         elif method == 'cmfx':
-            stat_map = mfx_ttest(x, vx)
+            stat_map = _mfx_t_test(x, vx)
         elif method == 'cjt':
             # if kwargs.has_key('k'):
             if 'k' in kwargs:
                 k = kwargs['k']
             else:
                 k = nsubj / 2
-            stat_map = conjunction(x, vx, k)
+            stat_map = _conjunction(x, vx, k)
         else:
             raise ValueError('unknown method')
 
         # add the binarized map to a reproducibility map
-        rmap += cluster_threshold(stat_map, domain, threshold, csize) > 0
+        rmap += (_cluster_threshold(stat_map, domain, threshold, csize) > 0)
 
     return rmap
 
@@ -492,7 +480,6 @@ def peak_reproducibility(data, vardata, domain, ngroups, sigma, method='crfx',
     -------
     score (float): the desired  cluster-level reproducibility index
     """
-    tiny = 1.e-15
     nsubj = data.shape[1]
     samples = draw_samples(nsubj, ngroups)
     all_pos = []
@@ -507,46 +494,34 @@ def peak_reproducibility(data, vardata, domain, ngroups, sigma, method='crfx',
 
         if method is not 'crfx':
             vx = vardata[:, samples[i]]
-        if method is not 'bsa':
-            threshold = kwargs['threshold']
+     
+        threshold = kwargs['threshold']
+        
+        if method == 'crfx':
+            stat_map = ttest(x)
+        elif method == 'cmfx':
+            stat_map = _mfx_t_test(x, vx)
+        elif method == 'cffx':
+            stat_map = _ffx_t_test(x, vx)
+        elif method == 'cjt':
+            if 'k' in kwargs:
+                k = kwargs['k']
+            else:
+                k = nsubj / 2
+            stat_map = _conjunction(x, vx, k)
 
-            if method == 'crfx':
-                stat_map = ttest(x)
-            elif method == 'cmfx':
-                stat_map = mfx_ttest(x, vx)
-            elif method == 'cffx':
-                stat_map = fttest(x, vx)
-            elif method == 'cjt':
-                if 'k' in kwargs:
-                    k = kwargs['k']
-                else:
-                    k = nsubj / 2
-                stat_map = conjunction(x, vx, k)
-
-            pos = get_peak_position_from_thresholded_map(
-                stat_map, domain, threshold)
-            all_pos.append(pos)
-        else:
-            # method='bsa' is a special case
-            tx = x / (tiny + np.sqrt(vx))
-            afname = kwargs['afname']
-            theta = kwargs['theta']
-            dmax = kwargs['dmax']
-            ths = kwargs['ths']
-            thq = kwargs['thq']
-            smin = kwargs['smin']
-            niter = kwargs['niter']
-            afname = afname + '_%02d_%04d.pic' % (niter, i)
-            pos = coord_bsa(domain, tx, theta, dmax, ths, thq, smin, afname)
-            all_pos.append(pos)
+        pos = _get_peak_position_from_thresholded_map(
+            stat_map, domain, threshold)
+        all_pos.append(pos)
+        
 
     # derive a kernel-based goodness measure from the pairwise comparison
     # of sets of positions
     score = 0
     for i in range(ngroups):
         for j in range(i):
-            score += statistics_from_position(all_pos[i], all_pos[j], sigma)
-            score += statistics_from_position(all_pos[j], all_pos[i], sigma)
+            score += _statistics_from_position(all_pos[i], all_pos[j], sigma)
+            score += _statistics_from_position(all_pos[j], all_pos[i], sigma)
     score /= (ngroups * (ngroups - 1))
     return score
 
@@ -580,7 +555,6 @@ def cluster_reproducibility(data, vardata, domain, ngroups, sigma,
     -------
     score (float): the desired  cluster-level reproducibility index
     """
-    tiny = 1.e-15
     nsubj = data.shape[1]
     samples = draw_samples(nsubj, ngroups)
     all_pos = []
@@ -595,36 +569,23 @@ def cluster_reproducibility(data, vardata, domain, ngroups, sigma,
 
         if method is not 'crfx':
             vx = vardata[:, samples[i]]
-        if method is not 'bsa':
-            csize = kwargs['csize']
-            threshold = kwargs['threshold']
-            if method == 'crfx':
-                stat_map = ttest(x)
-            elif method == 'cmfx':
-                stat_map = mfx_ttest(x, vx)
-            elif method == 'cffx':
-                stat_map = fttest(x, vx)
-            elif method == 'cjt':
-                if  'k' in kwargs:
-                    k = kwargs['k']
-                else:
-                    k = nsubj / 2
-                stat_map = conjunction(x, vx, k)
-            pos = get_cluster_position_from_thresholded_map(stat_map, domain,
-                                                            threshold, csize)
-            all_pos.append(pos)
-        else:
-            # method='bsa' is a special case
-            tx = x / (tiny + np.sqrt(vx))
-            afname = kwargs['afname']
-            theta = kwargs['theta']
-            dmax = kwargs['dmax']
-            ths = kwargs['ths']
-            thq = kwargs['thq']
-            smin = kwargs['smin']
-            niter = kwargs['niter']
-            afname = afname + '_%02d_%04d.pic' % (niter, i)
-            pos = coord_bsa(domain, tx, theta, dmax, ths, thq, smin, afname)
+
+        csize = kwargs['csize']
+        threshold = kwargs['threshold']
+        if method == 'crfx':
+            stat_map = ttest(x)
+        elif method == 'cmfx':
+            stat_map = _mfx_t_test(x, vx)
+        elif method == 'cffx':
+            stat_map = _ffx_t_test(x, vx)
+        elif method == 'cjt':
+            if  'k' in kwargs:
+                k = kwargs['k']
+            else:
+                k = nsubj / 2
+            stat_map = _conjunction(x, vx, k)
+        pos = _get_cluster_position_from_thresholded_map(
+            stat_map, domain, threshold, csize)
         all_pos.append(pos)
 
     # derive a kernel-based goodness measure from the pairwise comparison
@@ -632,8 +593,8 @@ def cluster_reproducibility(data, vardata, domain, ngroups, sigma,
     score = 0
     for i in range(ngroups):
         for j in range(i):
-            score += statistics_from_position(all_pos[i], all_pos[j], sigma)
-            score += statistics_from_position(all_pos[j], all_pos[i], sigma)
+            score += _statistics_from_position(all_pos[i], all_pos[j], sigma)
+            score += _statistics_from_position(all_pos[j], all_pos[i], sigma)
 
     score /= (ngroups * (ngroups - 1))
     return score
@@ -725,53 +686,8 @@ def group_reproducibility_metrics(
             if do_clusters:
                 cluster_rep_results[ng].update({th: np.array(cls)})
             if do_peaks:
-                peak_rep_results[ng].update({th: np.array(cls)})
+                peak_rep_results[ng].update({th: np.array(pk)})
 
     return voxel_rep_results, cluster_rep_results, peak_rep_results
 
 
-# -------------------------------------------------------
-# ---------- BSA stuff ----------------------------------
-# -------------------------------------------------------
-
-
-def coord_bsa(domain, betas, theta=3., dmax=5., ths=0, thq=0.5, smin=0,
-              afname=None):
-    """ main function for  performing bsa on a dataset
-    where bsa =  nipy.labs.spatial_models.bayesian_structural_analysis
-
-    Parameters
-    ----------
-    domain: image instance,
-          referential- and domain-defining image
-    betas: array of shape (nbnodes, subjects),
-           the multi-subject statistical maps
-    theta: float, optional
-           first level threshold
-    dmax: float>0, optional
-          expected cluster std in the common space in units of coord
-    ths: int, >=0), optional
-         representatitivity threshold
-    thq: float, optional,
-         posterior significance threshold should be in [0,1]
-    smin: int, optional,
-          minimal size of the regions to validate them
-    afname: string, optional
-            path where intermediate resullts cam be pickelized
-
-    Returns
-    -------
-    afcoord array of shape(number_of_regions,3):
-            coordinate of the found landmark regions
-    """
-    from ..spatial_models.bayesian_structural_analysis import compute_BSA_quick
-
-    crmap, AF, BF, p = compute_BSA_quick(
-        domain, betas, dmax, thq, smin, ths, theta, verbose=0)
-    if AF == None:
-        return None
-    if afname is not None:
-        import pickle
-        pickle.dump(AF, afname)
-    afcoord = AF.discrete_to_roi_features('position')
-    return afcoord

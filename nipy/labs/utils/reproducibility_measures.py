@@ -32,11 +32,12 @@ def _histo_repro(h):
 
     Parameters
     ----------
-    h array of shape(xmax+1), the histogram values
+    h: array of shape (xmax + 1), 
+       the histogram values
 
     Returns
     -------
-    hr, float: the measure
+    hr, float: estimate of the probability of reproducing a hit
     """
     k = np.size(h) - 1
     if k == 1:

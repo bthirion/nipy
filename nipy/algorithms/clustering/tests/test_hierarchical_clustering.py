@@ -10,56 +10,13 @@ Author : Bertrand Thirion, 2008-2009
 
 import numpy as np
 from numpy.random import randn
-from ..hierarchical_clustering import (average_link_graph,
-                                       average_link_graph_segment,
-                                       ward, ward_quick,
+from ..hierarchical_clustering import (ward, ward_quick,
                                        ward_segment, ward_field_segment,
                                        ward_quick_segment)
 from nipy.algorithms.graph.graph import WeightedGraph, knn
 from nipy.algorithms.graph.field import field_from_graph_and_data
 
 from nose.tools import assert_true, assert_equal
-
-
-def alg_test_basic(n=100,k=5):
-    # Check that we obtain the correct solution in a simplistic case
-    np.random.seed(0)
-    x = np.random.randn(n, 2)
-    x[:int(0.7*n)] += 3
-    G = knn(x, k)
-    t = average_link_graph(G)
-    u = t.split(2)
-    v = np.zeros(n)
-    v[:int(0.7*n)]=1
-    w = np.absolute(u-v)
-    assert_true(np.sum(w*(1-w))==0)
-
-
-def alg_test_2():
-    # Do we handle case of graph with too many connected components?
-    np.random.seed(0)
-    n = 100
-    k = 5
-    x = np.random.randn(n, 2)
-    x[:int(0.3*n)] += 10
-    x[int(0.8*n):] -= 10
-    G = knn(x, k)
-    t = average_link_graph(G)
-    u = t.split(2)
-    assert_true(u.max()==2)
-
-
-def alg_test_3(n=100,k=5):
-    # Check that we obtain the correct solution in a simplistic case
-    np.random.seed(0)
-    x = np.random.randn(n, 2)
-    x[:int(0.7*n)] += 3
-    G = knn(x, k)
-    u, cost = average_link_graph_segment(G, qmax=2)
-    v = np.zeros(n)
-    v[:int(0.7*n)]=1
-    w = np.absolute(u-v)
-    assert_true(np.sum(w*(1-w))==0)
 
 
 def ward_test_basic(n=100,k=5):

@@ -18,9 +18,7 @@ These are some developer discussions about design of code in NIPY.
    image_ordering
    registration_api
    repository_design
-   brainvisa_repositories
    repository_api
-   pipelining_api
    simple_viewer
    usecases/index
    refactoring/index

@@ -1,16 +1,16 @@
 
 
-NeuroSpin tools
-===============
+fMRI data analysis tools
+========================
 
-The package ``nipy.labs`` hosts some tools that where originally developed at
-NeuroSpin, France.  The list below also includes routines for estimating the
-empirical null, moved from ``nipy.labs`` to ``nipy.algorithms.statistics``.
-
+In this section we describe some key steps of fMRI data processing and
+how they are implemented in Nipy.
 
 .. toctree::
 
     mask.rst
+    dmtx.rst
+    glm.rst
     enn.rst
     viz.rst
     simul_activation.rst

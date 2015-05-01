@@ -80,19 +80,19 @@ def _cosine_drift(period_cut, frametimes):
     """
     len_tim = len(frametimes)
     n_times = np.arange(len_tim)
-    hfcut = 1./ period_cut # input parameter is the period  
-
-    dt = frametimes[1] - frametimes[0] # frametimes.max() should be (len_tim-1)*dt    
-    order = int(np.floor(2*len_tim*hfcut*dt)) # s.t. hfcut = 1/(2*dt) yields len_tim
+    hfcut = 1. / period_cut  # input parameter is the period
+    dt = frametimes[1] - frametimes[0]
+    order = int(np.floor(2 * len_tim * hfcut * dt))
+    # s.t. hfcut = 1/(2*dt) yields len_tim
     cdrift = np.zeros((len_tim, order))
-    nfct = np.sqrt(2.0/len_tim)
-    
-    for k in range(1, order):
-        cdrift[:,k-1] = nfct * np.cos((np.pi/len_tim)*(n_times + .5)*k)
-    
-    cdrift[:,order-1] = 1. # or 1./sqrt(len_tim) to normalize
-    return cdrift
+    nfct = np.sqrt(2.0 / len_tim)
 
+    for k in range(1, order):
+        cdrift[:, k - 1] = nfct * np.cos(
+            (np.pi / len_tim) * (n_times + .5) * k)
+
+    cdrift[:, order - 1] = 1.  # or 1./sqrt(len_tim) to normalize
+    return cdrift
 
 
 def _blank_drift(frametimes):
@@ -198,7 +198,7 @@ def _convolve_regressors(paradigm, hrf_model, frametimes, fir_delays=[0],
             fir_delays=fir_delays, oversampling=oversampling,
             min_onset=min_onset)
         hnames += names
-        if rmatrix == None:
+        if rmatrix is None:
             rmatrix = reg
         else:
             rmatrix = np.hstack((rmatrix, reg))
@@ -261,7 +261,7 @@ class DesignMatrix():
         if frametimes is not None:
             if frametimes.size != matrix.shape[0]:
                 raise ValueError(
-                    'The number %d of frametimes is different from the' + \
+                    'The number %d of frametimes is different from the' +
                     'number %d of rows' % (frametimes.size, matrix.shape[0]))
 
         self.frametimes = frametimes
@@ -362,14 +362,13 @@ def make_dmtx(frametimes, paradigm=None, hrf_model='canonical',
         if add_regs.shape[0] == np.size(add_regs):
             add_regs = np.reshape(add_regs, (np.size(add_regs), 1))
         n_add_regs = add_regs.shape[1]
-        assert add_regs.shape[0] == np.size(frametimes), \
-            ValueError(
+        assert add_regs.shape[0] == np.size(frametimes), ValueError(
             'incorrect specification of additional regressors: '
-            'length of regressors provided: %s, number of '
+            'length of regressors provided: %s, number of ' +
             'time-frames: %s' % (add_regs.shape[0], np.size(frametimes)))
 
     # check that additional regressor names are well specified
-    if  add_reg_names == None:
+    if add_reg_names is None:
         add_reg_names = ['reg%d' % k for k in range(n_add_regs)]
     elif len(add_reg_names) != n_add_regs:
         raise ValueError(
